@@ -40,23 +40,27 @@ if prompt := st.chat_input("What would you like to research today?"):
 
                     final_answer = results.get("final_answer", "No final answer found.")
                     sub_queries = results.get("sub_queries", [])
-                    sources = results.get("sources", [])
+                    sources = results.get("sources_used", [])
 
+                    # Display the main answer first
                     response_content = f"""### 📝 Final Answer
 {final_answer}
-
----
-
-#### ❓ Sub-Queries Generated:
 """
-                    for q in sub_queries:
-                        response_content += f"- {q}\n"
-                    
-                    response_content += "\n#### 📚 Sources Used:\n"
-                    for i, source in enumerate(sources):
-                        response_content += f"{i+1}. **{source['title']}** - [{source['url']}]({source['url']})\n"
-
                     st.markdown(response_content)
+
+                    # Create a collapsible expander for the research details
+                    with st.expander("🔍 View Research Process Details"):
+                        st.markdown("---_"*10)
+                        if sub_queries:
+                            st.markdown("#### ❓ Sub-Queries Generated:")
+                            for q in sub_queries:
+                                st.markdown(f"- `{q}`")
+                            st.markdown("\n")
+
+                        if sources:
+                            st.markdown("#### 📚 Sources Used:")
+                            for i, url in enumerate(sources):
+                                st.markdown(f"{i+1}. {url}")
 
                 except (json.JSONDecodeError, TypeError):
                     st.error("Failed to parse the research results.")
