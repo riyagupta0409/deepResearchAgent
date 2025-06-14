@@ -1,4 +1,5 @@
 import os
+import json
 import argparse
 from dotenv import load_dotenv
 from langgraph.graph import StateGraph, END
@@ -55,16 +56,18 @@ def build_graph():
     # Compile the graph
     return workflow.compile()
 
-def main():
-    """Main function to run the research agent."""
-    # Check for API keys
+def run_research_agent(query: str):
+    """Runs the research agent for a given query and returns the final JSON output."""
     if not all([os.getenv("GEMINI_API_KEY"), os.getenv("SERPER_API_KEY"), os.getenv("FIRECRAWL_API_KEY")]):
-        print("Error: API keys for Gemini, Serper, and Firecrawl must be set in the .env file.")
-        return
+        return json.dumps({"error": "API keys for Gemini, Serper, and Firecrawl must be set in the .env file."})
 
     app = build_graph()
+    initial_state = {"original_query": query}
+    final_state = app.invoke(initial_state)
+    return final_state.get('final_output_json', json.dumps({"error": "Could not retrieve final result."}))
 
-    # Get user query from command-line arguments
+def main():
+    """Main function to run the research agent from the command line."""
     parser = argparse.ArgumentParser(description="Deep Research Agent")
     parser.add_argument("query", type=str, help="The research query.")
     args = parser.parse_args()
@@ -74,12 +77,10 @@ def main():
         print("Error: Query cannot be empty.")
         return
 
-    # Run the graph
-    initial_state = {"original_query": query}
-    final_state = app.invoke(initial_state)
-
+    result_json = run_research_agent(query)
     print("\n--- Research Complete ---")
-    print(final_state['final_output_json'])
+    # Pretty print the JSON result
+    print(json.dumps(json.loads(result_json), indent=4))
 
 if __name__ == "__main__":
     main()

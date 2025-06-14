@@ -29,7 +29,7 @@ def call_gemini(prompt: str):
 
 def generate_sub_queries(query: str) -> list:
     """Generates sub-queries using Gemini API."""
-    prompt = f"""Given the following user query, please generate 3-5 sub-queries that are more specific and focused for web research. The sub-queries should be diverse and cover different aspects of the main query. Return the sub-queries as a JSON list of strings.
+    prompt = f"""Given the following user query, please generate 1-2 sub-queries that are more specific and focused for web research. The sub-queries should be diverse and cover different aspects of the main query. Return the sub-queries as a JSON list of strings.
 
 User Query: {query}
 
