@@ -7,6 +7,13 @@ def summarizer_node(state):
     original_query = state["original_query"]
     sources = state["sources"]
 
+    # Defensively check if filtered_chunks contains dicts and extract text if so.
+    if filtered_chunks and isinstance(filtered_chunks[0], dict):
+        chunk_texts = [chunk.get('chunk', '') for chunk in filtered_chunks]
+    else:
+        chunk_texts = filtered_chunks # It's already a list of strings
+
+    content_string = "\n\n".join(chunk_texts)
     source_citations = "\n".join([f"[{i+1}] {source['title']}: {source['url']}" for i, source in enumerate(sources)])
 
     prompt = f"""Based on the following content and the original query, synthesize a deep, research-backed answer. The answer should be comprehensive and well-structured. Make sure to cite the sources using the format [1], [2], etc., corresponding to the provided source list.
@@ -14,7 +21,7 @@ def summarizer_node(state):
 Original Query: {original_query}
 
 Content:
-{'\n\n'.join(filtered_chunks)}
+{content_string}
 
 Sources:
 {source_citations}

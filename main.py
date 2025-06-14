@@ -57,14 +57,28 @@ def build_graph():
     return workflow.compile()
 
 def run_research_agent(query: str):
-    """Runs the research agent for a given query and returns the final JSON output."""
+    """Runs the research agent for a given query and yields status updates."""
     if not all([os.getenv("GEMINI_API_KEY"), os.getenv("SERPER_API_KEY"), os.getenv("FIRECRAWL_API_KEY")]):
-        return json.dumps({"error": "API keys for Gemini, Serper, and Firecrawl must be set in the .env file."})
+        yield {"type": "error", "data": "API keys for Gemini, Serper, and Firecrawl must be set in the .env file."}
+        return
 
     app = build_graph()
     initial_state = {"original_query": query}
-    final_state = app.invoke(initial_state)
-    return final_state.get('final_output_json', json.dumps({"error": "Could not retrieve final result."}))
+
+    for event in app.stream(initial_state):
+        for node_name, output in event.items():
+            if node_name == "query_generator":
+                yield {"type": "status", "data": "✅ Generated sub-queries..."}
+            elif node_name == "serp_fetcher":
+                yield {"type": "status", "data": "🔍 Searching the web..."}
+            elif node_name == "scraper":
+                yield {"type": "status", "data": "📄 Scraping web pages..."}
+            elif node_name == "filter_chunks":
+                yield {"type": "status", "data": "✂️ Filtering and chunking content..."}
+            elif node_name == "summarizer":
+                yield {"type": "status", "data": "✍️ Synthesizing the final answer..."}
+            elif node_name == "output_formatter":
+                yield {"type": "result", "data": output.get('final_output_json')}
 
 def main():
     """Main function to run the research agent from the command line."""
@@ -77,10 +91,22 @@ def main():
         print("Error: Query cannot be empty.")
         return
 
-    result_json = run_research_agent(query)
-    print("\n--- Research Complete ---")
-    # Pretty print the JSON result
-    print(json.dumps(json.loads(result_json), indent=4))
+    final_result = None
+    for event in run_research_agent(query):
+        if event.get("type") == "status":
+            print(event["data"])  # Print status to console
+        elif event.get("type") == "result":
+            final_result = event["data"]
+            break
+        elif event.get("type") == "error":
+            print(f"Error: {event['data']}")
+            break
+
+    if final_result:
+        print("\n--- Research Complete ---")
+        print(json.dumps(json.loads(final_result), indent=4))
+    else:
+        print("\nCould not complete research.")
 
 if __name__ == "__main__":
     main()

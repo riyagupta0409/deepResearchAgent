@@ -26,22 +26,22 @@ if prompt := st.chat_input("What would you like to research today?"):
 
     # Display assistant response in chat message container
     with st.chat_message("assistant"):
-        with st.spinner("👩‍💻 Conducting deep research..."):
-            result_json = run_research_agent(prompt)
-            try:
-                results = json.loads(result_json)
+        status_placeholder = st.empty()
+        response_content = ""
 
-                if "error" in results:
-                    st.error(f"An error occurred: {results['error']}")
-                    response_content = f"Sorry, I encountered an error: {results['error']}"
-                else:
+        for event in run_research_agent(prompt):
+            if event.get("type") == "status":
+                status_placeholder.info(event["data"])
+            elif event.get("type") == "result":
+                status_placeholder.empty() # Clear the status message
+                try:
+                    results = json.loads(event["data"])
                     st.success("Research complete!")
-                    
+
                     final_answer = results.get("final_answer", "No final answer found.")
                     sub_queries = results.get("sub_queries", [])
                     sources = results.get("sources", [])
 
-                    # Format the response
                     response_content = f"""### 📝 Final Answer
 {final_answer}
 
@@ -58,9 +58,16 @@ if prompt := st.chat_input("What would you like to research today?"):
 
                     st.markdown(response_content)
 
-            except json.JSONDecodeError:
-                st.error("Failed to parse the research results.")
-                response_content = "Sorry, I received an invalid response from the research agent."
+                except (json.JSONDecodeError, TypeError):
+                    st.error("Failed to parse the research results.")
+                    response_content = "Sorry, I received an invalid response from the research agent."
+                break # Exit loop once result is received
 
-    # Add assistant response to chat history
-    st.session_state.messages.append({"role": "assistant", "content": response_content})
+            elif event.get("type") == "error":
+                st.error(f"An error occurred: {event['data']}")
+                response_content = f"Sorry, I encountered an error: {event['data']}"
+                break
+
+    # Add the final assistant response to chat history
+    if response_content:
+        st.session_state.messages.append({"role": "assistant", "content": response_content})
