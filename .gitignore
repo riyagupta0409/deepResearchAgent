@@ -1,0 +1,17 @@
+# Environment variables
+.env
+
+# Python bytecode
+__pycache__/
+*.pyc
+
+# OS-specific files
+.DS_Store
+
+# Virtual environment
+venv/
+.venv/
+env/
+
+# Output files
+research_result.json

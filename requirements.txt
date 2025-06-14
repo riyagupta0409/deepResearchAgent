@@ -1,0 +1,5 @@
+langgraph
+requests
+python-dotenv
+streamlit
+tiktoken
